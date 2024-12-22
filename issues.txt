@@ -1,0 +1,2 @@
+Issues I encountered
+- the theta is not shown as the symbol theta but the text 'theta'
