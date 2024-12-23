@@ -1,13 +1,7 @@
 import numpy as np
 import sympy as sp
-from sympy.utilities import lambdify
-from sympy.solvers import solve
-import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-from matplotlib import animation
-from matplotlib.animation import PillowWriter
-from IPython.display import HTML
-plt.style.use('seaborn-v0_8')
+import pygame
 
 class Pendulum:
     def __init__(self, l, t, theta0, v0):
@@ -24,16 +18,16 @@ class Pendulum:
 
         x, y  = l*sp.sin(theta), -l*sp.cos(theta)
 
-        #kinetic energy
+        # Kinetic energy
         T = sp.Rational(1,2)*m*(x.diff(t)**2 + y.diff(t)**2)
-        #potential energy
+        # Potential energy
         V = m*g*y
-        #Lanragian Mechanics
+        # Lagrangian Mechanics
         L = T - V
 
-        #left hand side
+        # Left-hand side
         lhs = L.diff(theta)
-        #right hand side
+        # Right-hand side
         rhs = sp.diff(L.diff(dtheta), t)
 
         eq = rhs - lhs
@@ -54,46 +48,56 @@ class Pendulum:
 
         def dXdt(X, t, g, l):
             theta_num, u_num  = X
-
             return [dthetadt_num(u_num),
-            dudt_num(g, l, theta_num)]
+                    dudt_num(g, l, theta_num)]
         
-        sol = odeint(dXdt, t=t, y0=conditions, args = (g, l))
+        sol = odeint(dXdt, t=t, y0=conditions, args=(g, l))
         angle = sol.T[0]
         velocity = sol.T[1]
 
-        return x_num(l, angle), y_num(l,angle)
+        return x_num(l, angle), y_num(l, angle)
 
 t = np.linspace(0, 10, 500)
 pen = Pendulum(1, t, np.pi/4, 0)
 x, y = pen.solve_pendulum_motion()
 
+pygame.init()
 
-# plt.plot(t, x)
-# plt.show()
+width, height = 600, 400
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption('Pendulum Animation')
 
-#configuration of pendulum
 x0, y0 = x[0], y[0]
+center = (width // 2, height // 2)
+bob_radius = 10
 
-fig = plt.figure()
-ax = fig.add_subplot(aspect='equal')
+clock = pygame.time.Clock()
+running = True
+frame = 0
+nframes = len(x)
 
-line = ax.plot([0, x0], [0, y0], lw=3, c='green')
-bob_radius = 0.08
-circle = ax.add_patch(plt.Circle((x0,y0), bob_radius, fc='r', zorder=3))
-ax.set_xlim([-x.max()-0.5, x.max()+0.5])
-ax.set_ylim([y.min()-0.5,0.5])
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-#the function to animate
-def animate(i):
-    line.set_data([0, x[i]], [0, y[i]])
-    circle.set_center((x[i], y[i]))
-
-nsteps = len(x)
-nframes = nsteps
-dt = t[1] - t[0]
-interval = dt*1000
-ani = animation.FuncAnimation(fig, animate, frames=nframes, repeat=True, interval=interval)
+    screen.fill((255, 255, 255))
 
 
-HTML(ani.to_html5_video())
+    bob_pos = (int(center[0] + x[frame] * 100), int(center[1] - y[frame] * 100))  
+
+
+    pygame.draw.line(screen, (0, 255, 0), center, bob_pos, 3)
+    pygame.draw.circle(screen, (255, 0, 0), bob_pos, bob_radius)
+
+
+    pygame.display.flip()
+
+
+    frame = (frame + 1) % nframes
+
+
+    clock.tick(60)
+
+
+pygame.quit()
