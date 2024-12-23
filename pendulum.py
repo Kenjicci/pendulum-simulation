@@ -59,17 +59,41 @@ class Pendulum:
             dudt_num(g, l, theta_num)]
         
         sol = odeint(dXdt, t=t, y0=conditions, args = (g, l))
+        angle = sol.T[0]
+        velocity = sol.T[1]
 
-        return sol
+        return x_num(l, angle), y_num(l,angle)
 
 t = np.linspace(0, 10, 500)
 pen = Pendulum(1, t, np.pi/4, 0)
-sol = pen.solve_pendulum_motion()
+x, y = pen.solve_pendulum_motion()
 
-theta = sol[:, 0]
-velocity = sol[:, 1]
 
-plt.plot(t, theta, label = 'angle')
-plt.plot(t, velocity, label='velocity')
-plt.legend()
-plt.show()
+# plt.plot(t, x)
+# plt.show()
+
+#configuration of pendulum
+x0, y0 = x[0], y[0]
+
+fig = plt.figure()
+ax = fig.add_subplot(aspect='equal')
+
+line = ax.plot([0, x0], [0, y0], lw=3, c='green')
+bob_radius = 0.08
+circle = ax.add_patch(plt.Circle((x0,y0), bob_radius, fc='r', zorder=3))
+ax.set_xlim([-x.max()-0.5, x.max()+0.5])
+ax.set_ylim([y.min()-0.5,0.5])
+
+#the function to animate
+def animate(i):
+    line.set_data([0, x[i]], [0, y[i]])
+    circle.set_center((x[i], y[i]))
+
+nsteps = len(x)
+nframes = nsteps
+dt = t[1] - t[0]
+interval = dt*1000
+ani = animation.FuncAnimation(fig, animate, frames=nframes, repeat=True, interval=interval)
+
+
+HTML(ani.to_html5_video())
